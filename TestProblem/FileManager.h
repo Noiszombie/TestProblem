@@ -7,17 +7,14 @@
 class FileManager
 {
 public:
-	FileManager(std::vector <std::string>);
-	~FileManager();
-	size_t get_size();
-	std::deque <std::filesystem::path> get_files_();
-	//std::mutex get_mutex();
-	void do_parallel(std::filesystem::path);
+	explicit FileManager(const std::string & dir_path);
+
+	//! todo delete other constructors
+
+	size_t get_size() const noexcept;
+	const std::vector<std::filesystem::path> & get_files() const noexcept;
 private:
 	std::vector <std::string> options_;
-	//std::vector <std::filesystem::path> files_;
-	std::deque <std::filesystem::path> file_queue_;
-	std::mutex queue_mutex_;
-	size_t file_count_;
+	std::vector <std::filesystem::path> files_;
 };
 

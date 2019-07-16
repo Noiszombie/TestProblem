@@ -3,7 +3,7 @@
 #include <stdexcept>
 
 ThreadPool::Semaphore::Semaphore(const size_t n)
-	: counter_{ n }
+	: counter_{ n }, number_of_tasks_{ 0u }
 {
 }
 
@@ -12,6 +12,7 @@ void ThreadPool::Semaphore::wait()
 	std::unique_lock<std::mutex> lock{ mutex_ };
 	condition_.wait(lock, [&] { return counter_ > 0; });
 	--counter_;
+	number_of_tasks_++;
 }
 
 void ThreadPool::Semaphore::post()
@@ -19,6 +20,7 @@ void ThreadPool::Semaphore::post()
 	std::lock_guard<std::mutex> lock{ mutex_ };
 	++counter_;
 	condition_.notify_one();
+	number_of_tasks_--;
 }
 
 ThreadPool::ThreadPool(const size_t number_of_threads)
@@ -27,6 +29,7 @@ ThreadPool::ThreadPool(const size_t number_of_threads)
 	, has_job_{ 0u }
 	, idle_threads_{ number_of_threads_ }
 	, quit_{ 0u }
+	, flag_{ 0u }
 {
 	if (!number_of_threads_)
 	{
@@ -37,10 +40,18 @@ ThreadPool::ThreadPool(const size_t number_of_threads)
 	auto routine = [this] {
 		while (!quit_)
 		{
-			has_job_.wait();
+			if (!flag_)
+				has_job_.wait();
 
+			if (flag_)
+			{
+				has_job_.post();
+				break;
+			}
+	
 			if (quit_)
 			{
+				
 				break;
 			}
 
@@ -54,24 +65,30 @@ ThreadPool::ThreadPool(const size_t number_of_threads)
 			job();
 			idle_threads_.fetch_add(1, std::memory_order_release);
 		}
+		return;
 	};
 
 	for (auto & worker : workers_) {
 		worker = std::thread(routine);
 	}
+
+
 }
 
 ThreadPool::~ThreadPool()
 {
-	for (auto i = 0u; i != idle_threads_.load(); ++i)
-	{
-		has_job_.post();
-	}
 
-	for (auto & worker : workers_)
+	for (;;)
 	{
-		worker.join();
+		if (queue_.empty())
+		{
+			flag_ = 1u;
+			break;
+		}
 	}
+	for (auto & worker : workers_)
+		worker.join();
+	//stop();
 }
 
 void ThreadPool::stop()

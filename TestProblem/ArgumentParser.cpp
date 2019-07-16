@@ -7,8 +7,6 @@ ArgumentParser::ArgumentParser(const int argc, char ** argv)
 	{
 		tokens_.emplace_back(argv[i]);
 	}
-	for (auto & p : tokens_)
-		std::cout << p << std::endl;
 	parametr_parser();
 	option_parser();
 }	
@@ -21,10 +19,13 @@ std::vector <std::string> ArgumentParser::get_options()
 
 void ArgumentParser::option_parser()
 {
-	if ((options_[2u] != "i") && (options_[2u] != "s"))
-		std::cout << "Wrong type" << std::endl;
-	if ((options_[3u] != "a") && (options_[3u] != "d"))
-		std::cout << "Wrong mode" << std::endl;
+	if (options_.size() != 0u)
+	{
+		if ((options_[2u] != "i") && (options_[2u] != "s"))
+			std::cout << "Wrong type" << std::endl;
+		if ((options_[3u] != "a") && (options_[3u] != "d"))
+			std::cout << "Wrong mode" << std::endl;
+	}
 }
 
 

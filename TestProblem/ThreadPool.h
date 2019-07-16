@@ -39,6 +39,7 @@ private:
 		void post();
 
 	private:
+		std::size_t number_of_tasks_;
 		std::size_t counter_;
 		std::mutex mutex_;
 		std::condition_variable condition_;
@@ -52,6 +53,7 @@ private:
 	std::atomic_size_t idle_threads_;
 	std::mutex queue_mutex_;
 	std::sig_atomic_t quit_;
+	std::sig_atomic_t flag_;
 };
 
 #include "ThreadPool.inl"

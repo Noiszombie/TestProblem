@@ -6,39 +6,27 @@
 #include <iostream>
 #include <deque>
 
-FileManager::FileManager(std::vector <std::string> args) : options_(args)
+FileManager::FileManager(const std::string & dir_path)
 {
-
-
-
-	std::cout << "Check dir" << std::endl;
-	if (!std::filesystem::exists(options_[0u]))
+	const auto path = std::filesystem::path{ dir_path };
+	if (!std::filesystem::exists(path))
 	{
-		std::cout << "Wrong dir" << std::endl;
+		throw std::runtime_error("path doesnt exist");
 	}
-	//std::filesystem::path dir(options_[0u]);
-	for (auto& p : std::filesystem::directory_iterator(options_[0u]))
-		file_queue_.emplace_back(p.path());
-
-	file_count_ = file_queue_.size();
+	for (const auto & file : std::filesystem::directory_iterator(path))
+	{
+		//! if dir than ignore + print warning
+		files_.emplace_back(file.path());
+	}
 }
 
-size_t FileManager::get_size()
+size_t FileManager::get_size() const noexcept
 {
-	return file_count_;
+	return files_.size();
 }
 
-void FileManager::do_parallel(std::filesystem::path file)
+const std::vector<std::filesystem::path> & FileManager::get_files() const noexcept
 {
-std::cout << file << std::endl;
+	return files_;
 }
 
-
-std::deque <std::filesystem::path> FileManager::get_files_()
-{
-	return file_queue_;
-}
-
-FileManager::~FileManager()
-{
-}

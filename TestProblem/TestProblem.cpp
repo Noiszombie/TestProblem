@@ -7,95 +7,144 @@
 #include <mutex>
 #include <filesystem>
 #include <fstream>
-void do_parallel(std::filesystem::path file)
-{
-	std::cout << file << std::endl;
-}
 
-std::string str_sub(std::string str1, std::string str2)
+enum class ContentType : std::uint8_t
 {
-	std::string result;
-	if (str1.length() < str2.length())
-		return "";
-	for (auto i = 0u; i < str1.length(); i++)
+	Integer,
+	String,
+};
+
+auto str_sub = [](std::string str1, std::string str2)
+{
+	std::string result = "";
+	if ((str1.length() < str2.length()) && (str1.length() == 0u || str2.length() == 0u))
 	{
-		if (str1[i] != str2[i])
-			result.push_back(str1[i]);
+		return result;
 	}
-	result.push_back('\0');
+
+	for (auto i = str2.length(); i < str1.length(); i++)
+	{
+		result.push_back(str1[i]);
+	}
+	//result.push_back('\0');
 	return result;
-}
+};
 
-auto sort = [](std::vector <int> vect) {
-	int key;
+auto str_sort = [](const std::string & l, const std::string & r) { return l.size() < r.size(); };
+auto int_sort = [](const int & l, const int & r) { return l < r; };
+
+template<typename T, typename U = std::greater<>>
+auto sort(std::vector<T> & input_data, const U & comparator = U())
+{
+	T key;
 	int j;
-	for (auto i = 1u; i < vect.size(); i++)
+	for (auto i = 1u; i < input_data.size(); i++)
 	{
-		key = vect[i];
+		key = input_data[i];
 		j = i - 1;
-		while (j >= 0 && vect[j] > key)
+		while (j >= 0 && comparator(input_data[j], key))
 		{
-			vect[j + 1] = vect[j];
-			j--;
+			input_data[j + 1] = input_data[j];
+			--j;
 		}
-		vect[j + 1] = key;
+		input_data[j + 1] = key;
 	}
-	for (auto each : vect)
-		std::cout << each << std::endl;
-	return vect;
+	return input_data;
+};
+
+template<class T>
+auto reverse(std::vector <T> &vect)
+{
+	std::vector <T> reversed_vect_;
+	for (auto i = 0u; i < vect.size(); i++)
+		reversed_vect_.emplace_back(vect[vect.size() - i - 1u]);
+	return reversed_vect_;
 };
 
 
-std::vector <int> reverse(std::vector <int> vect)
+//template<typename T>
+auto sort_task = [](
+	std::filesystem::path file,
+	std::filesystem::path dir,
+	const std::string out_prefix,
+	const ContentType content_type,
+	const std::string sort_mode)
 {
-	std::vector <int> reversed_vect_;
-	for (auto i = 0u; i < vect.size(); i++)
-		reversed_vect_.emplace_back(vect[vect.size()-i-1u]);
-	return reversed_vect_;
-}
+	//std::cout << std::this_thread::get_id() << std::endl;
 
-int main(int argc, char ** argv)
-{
-	ArgumentParser argument_parser{ argc, argv };
-	FileManager dir(argument_parser.get_options());
-	auto options_ = argument_parser.get_options();
 
-	auto task = [](std::filesystem::path atom, std::vector <std::string> options)
+	std::vector<std::string> data;
 	{
-		char buff[50];
-		std::vector <int> raw_vect_;
-		std::ifstream fin(atom);
-		while (fin.getline(buff, 50))
-		{
-			raw_vect_.emplace_back(std::stoi(buff));
+		std::ifstream fin(file);
+		for (std::string line; std::getline(fin, line); ) {
+			//if(content_type == ContentType::Integer)
+				//data.push_back(std::stoi(line));
+			if(content_type == ContentType::String)
+				data.push_back(line);
 		}
 		fin.close();
-		std::vector <int> sorted_vect_ = sort(raw_vect_);
-		if (options[3u] == "d")
-			sorted_vect_ = reverse(sorted_vect_);
-		std::ofstream fout(options[1u]+atom.string());
-		std::cout << options[1u] + str_sub(atom.string(), options[1u])  << std::endl;
-		for (auto elem : sorted_vect_)
-			fout << elem << std::endl;
-	};
-	std::deque <std::filesystem::path> files = dir.get_files_();
-
-
-	std::vector <int> a = { 1, 2 , 3, 4, 5 };
-	a = reverse(a);
-	for (auto & elem : a)
-		std::cout << elem;
-
-	ThreadPool thread_pool{ 2u };
-
-
-	for (auto & atom : files)
-	{
-		auto result = thread_pool.add_task(task, atom, options_);
 	}
-	std::this_thread::sleep_for(std::chrono::seconds{ 1u });
-	
-	thread_pool.stop();
+
+
+
+	//(content_type == ContentType::Integer) ? sort(data, int_sort) : sort(data, str_sort);
+	sort(data, str_sort);
+
+	if (sort_mode == "d")
+		data = reverse(data);
+	{
+		auto name = str_sub(file.string(), dir.string() + "\\");
+		std::cout << dir.string() + "\\" + out_prefix + name << std::endl;
+		std::ofstream fout(dir.string() + "\\" + out_prefix + name);
+		for (const auto & element : data)
+		{
+			fout << element << std::endl;
+		}
+		fout.close();
+	}	
+};
+
+
+int main(int argc, char ** argv) try
+{
+	ArgumentParser argument_parser{ argc, argv };
+	const auto options = argument_parser.get_options();
+	const auto dir_path = [&options]() -> std::string {
+		const auto path = options.size() != 0u ? options[0u] : "";
+		return std::filesystem::exists(path)
+			? path
+			: "";
+	}();
+	if (dir_path.empty())
+	{
+		throw std::runtime_error("Wrong dir");
+	}
+
+
+
+	FileManager file_manager(dir_path);
+	const auto & files = file_manager.get_files();
+
+	const auto number_of_files_ = files.size();
+	const auto dir = options[0u];
+	const auto out_prefix = options[1u];
+	const auto parsed_string = options[2u];
+	const auto content_type = "i" == parsed_string ? ContentType::Integer : ContentType::String;
+	const auto sort_mode = options[3u];
+	//std::vector <T>
+	ThreadPool thread_pool{ 10u };
+	for (auto & file : files)
+	{
+		thread_pool.add_task(sort_task, file, dir, out_prefix, content_type, sort_mode);
+	}
+
+	//thread_pool.stop();
 	std::cout << "End game" << std::endl;
-	return 0;
+}
+
+
+
+	catch (const std::exception & exception)
+{
+	std::cerr << exception.what();
 }
