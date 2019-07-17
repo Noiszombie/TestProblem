@@ -50,9 +50,13 @@ void ArgumentParser::parametr_parser()
 		{
 			options_.emplace_back(tokens_[1u].substr(13u, tokens_[1u].size()));
 		}
+		else if (tokens_[0u] == "--help")
+		{
+			throw std::runtime_error("Try one of examples with right directory!");
+		}
 		else
 		{
-			throw std::runtime_error("Wrong first parametrs!");
+			throw std::runtime_error("Wrong first parametr!");
 		}
 		if ((tokens_.size() >= 3u) && (tokens_[2u].substr(0u, 15u) == "--content-type="))
 		{
