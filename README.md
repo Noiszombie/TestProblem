@@ -1,5 +1,3 @@
-# TestProblem
-Solution of test problem
 Решение собирал в visual studio 2017, стандарт С++17. 
 Запускал через cmd файл .exe в папке Debug с параметрами вида.
 Examples of cmd commands:
