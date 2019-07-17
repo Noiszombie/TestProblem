@@ -8,7 +8,6 @@ class ArgumentParser final
 {
 public:
 	ArgumentParser(int argc, char ** argv);
-
 	std::vector <std::string> get_options();
 private:
 	void parametr_parser();

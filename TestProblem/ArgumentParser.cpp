@@ -22,9 +22,13 @@ void ArgumentParser::option_parser()
 	if (options_.size() != 0u)
 	{
 		if ((options_[2u] != "i") && (options_[2u] != "s"))
-			std::cout << "Wrong type" << std::endl;
+		{
+			throw std::runtime_error("Wrong type!");
+		}
 		if ((options_[3u] != "a") && (options_[3u] != "d"))
-			std::cout << "Wrong mode" << std::endl;
+		{
+			throw std::runtime_error("Wrong type!");
+		}
 	}
 }
 
@@ -48,7 +52,7 @@ void ArgumentParser::parametr_parser()
 		}
 		else
 		{
-			std::cout << "Wrong first parametr" << std::endl;
+			throw std::runtime_error("Wrong first parametrs!");
 		}
 		if ((tokens_.size() >= 3u) && (tokens_[2u].substr(0u, 15u) == "--content-type="))
 		{
@@ -56,7 +60,7 @@ void ArgumentParser::parametr_parser()
 		}
 		else
 		{
-			std::cout << "Wrong second parametr" << std::endl;
+			throw std::runtime_error("Wrong second parametrs!");
 		}
 		if ((tokens_.size() >= 4u) && (tokens_[3u].substr(0u, 12u) == "--sort-mode="))
 		{
@@ -64,9 +68,11 @@ void ArgumentParser::parametr_parser()
 		}
 		else
 		{
-			std::cout << "Wrong third parametr" << std::endl;
+			throw std::runtime_error("Wrong third parametrs!");
 		}
 	}
 	else
-		std::cout << "Wrong parametrs!" << std::endl;
+	{
+		throw std::runtime_error("Wrong parametrs!");
+	}
 }

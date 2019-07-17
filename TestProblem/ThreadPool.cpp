@@ -88,7 +88,6 @@ ThreadPool::~ThreadPool()
 	}
 	for (auto & worker : workers_)
 		worker.join();
-	//stop();
 }
 
 void ThreadPool::stop()
